@@ -1,0 +1,16 @@
+image: debian:latest
+
+stages:
+  - build
+
+build:
+  stage: build
+  script:
+    - apt-get update -y && apt-get install -y xutils-dev autoconf automake make gcc pkg-config libx11-dev x11proto-dev
+    - autoreconf -i
+    - automake
+    - ./configure
+    - make
+  artifacts:
+    paths:
+      xrefresh
