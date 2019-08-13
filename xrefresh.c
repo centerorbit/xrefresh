@@ -82,9 +82,10 @@ Syntax(void)
 	     "    -solid colorname        use the color indicated\n"
 	     "    -root                   use the root background\n"
 	     "    -none                   no background in window\n"
+	     "    -delay ms               time to hold refresh\n"
 	     "    -version                print program version\n"
 	);
-    fprintf (stderr, "\nThe default is:  %s -none\n\n", ProgramName);
+    fprintf(stderr, "\nThe default is:  %s -none -delay 0\n\n", ProgramName);
     exit (1);
 }
 
@@ -191,11 +192,13 @@ main(int argc, char *argv[])
     unsigned long mask;
     int screen;
     int x, y, width, height;
+    unsigned long delay = 0;
     char *geom = NULL;
     int geom_result;
     int display_width, display_height;
     char *solidcolor = NULL;
     XColor cdef;
+    struct timespec tim;
 
     ProgramName = argv[0];
 
@@ -228,7 +231,12 @@ main(int argc, char *argv[])
 	    } else if (isabbreviation ("-root", arg, 2)) {
 		action = doRoot;
 		continue;
-	    } else if (isabbreviation ("-version", arg, 1)) {
+	    } else if (isabbreviation("-delay", arg, 2)) {
+		if (++i >= argc) missing_arg(arg);
+		delay = ((unsigned long)atol(argv[i])) * 1000000L;
+		continue;
+	    }
+	    else if (isabbreviation ("-version", arg, 1)) {
 		puts(PACKAGE_STRING);
 		exit(0);
 	    } else 
@@ -376,6 +384,15 @@ main(int argc, char *argv[])
      * backing store;  or do a ClearArea generating exposures on all windows
      */
     XMapWindow (dpy, win);
+    /* flushing, because sometimes window will never show (especially for
+	 * exceptionally short delays) */
+    XFlush(dpy);
+
+    /* pause before returning screen */
+    tim.tv_sec = delay / 1000000000L;
+    tim.tv_nsec = delay % 1000000000L;
+    nanosleep(&tim , NULL);
+
     /* the following will free the color that we might have allocated */
     XCloseDisplay (dpy);
     exit (0);
